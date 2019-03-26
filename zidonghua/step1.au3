@@ -2,10 +2,16 @@
 #include <File.au3>
 #include <Date.au3>
 
-ConsoleWrite(_NowTime())
-Local $testNum=0;
-
 Run("C:\Program Files\internet explorer\iexplore.exe https://sycm.taobao.com/custom/login.htm?_target=http://sycm.taobao.com/portal/home.htm")
+
+;Start初始化一下当前文件路径下的data目录
+Local $flag=FileExists(@ScriptDir&'\data\')
+If $flag=1 Then
+	FileDelete(@ScriptDir&'\data\')
+EndIf
+_FileCreate(@ScriptDir&'\data\')
+;End初始化一下当前文件路径下的data目录
+
 Sleep(1000)
 Local $ie = _IEAttach("生意参谋")
 While @error <> 0
@@ -77,11 +83,6 @@ For $i = 1 To $levelOneNum Step +1
 		;获取三级菜单的数量
 		Local $levelThreeNum=$ie.document.querySelector(".tree-scroll-menu-level-3").getElementsByTagName("li").length
 		For $k = 1 To $levelThreeNum Step +1
-			$testNum=$testNum+1
-			if $testNum=50 Then
-				ConsoleWrite(_NowTime())
-				exit(0)
-			EndIf
 			$ie.document.querySelector(".tree-scroll-menu-level-3>li:nth-child("&$k&")").click()
 			Local $levelThreeText=$ie.document.querySelector(".tree-scroll-menu-level-3>li:nth-child("&$k&")").innerText
 			$levelThreeText=StringStripCR($levelThreeText)
@@ -115,7 +116,7 @@ For $i = 1 To $levelOneNum Step +1
 			$flagNum=0
 			Local $sHTML = _IEBodyReadHTML($ie)
 			;将获取到的html存储到文件供在python中解析
-			Local $hFile = FileOpen("D:\zidonghua\data\"&$levelOneText&'_'&$levelTwoText&'_'&$levelThreeText&'.txt',1)
+			Local $hFile = FileOpen(@ScriptDir&'\data\'&$levelOneText&'_'&$levelTwoText&'_'&$levelThreeText&'.txt',1)
 			_FileWriteLog ($hFile, $sHTML)
 			FileFlush($hFile)
 			;关闭打开的文件

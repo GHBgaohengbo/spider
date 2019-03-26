@@ -1,6 +1,7 @@
 import re
 import csv
 import os
+import pandas
 from urllib import request
 
 
@@ -13,10 +14,10 @@ class Spider():
     product_detail_tb_pattern=r'<div class="tb-property tb-property-x">([\s\S]*?)class="tb-sidebar tb-clear"'
     detail_title_tb_pattern=r'<h3 class="tb-main-title"([\s\S]*?)</h3>'
     detail_price_tb_pattern=r'<em class="tb-rmb-num">([\s\S]*?)</em>'
-    detail_discount_price_tb_pattern=r'<em id="J_PromoPriceNum" class="tb-rmb-num">([\s\S]*?)</em>'
-    detail_commentNum_tb_pattern=r'<strong id="J_RateCounter">([\s\S]*?)</strong>'
+    detail_discount_price_tb_pattern=r'id="J_PromoPriceNum">([\s\S]*?)</em>'
+    detail_commentNum_tb_pattern=r'id="J_RateCounter">([\s\S]*?)</strong>'
     detail_tradeNum_tb_pattern=r'<strong id="J_SellCounter">([\s\S]*?)</strong>'
-    detail_stockNum_tb_pattern=r'<span id="J_SpanStock">([\s\S]*?)</span>'
+    detail_stockNum_tb_pattern=r'id="J_SpanStock">([\s\S]*?)</span>'
     detail_popularity_tb_pattern=r'<em class="J_FavCount">([\s\S]*?)</em>'
     product_attitudes_tb_pattern=r'<ul class="attributes-list">([\s\S]*?)</ul>'
     product_attitude_tb_pattern=r'>([\s\S]*?)</li>'
@@ -29,6 +30,9 @@ class Spider():
     detail_popularity_tm_pattern=r'<span id="J_CollectCount">([\s\S]*?)</span>'
     product_attitudes_tm_pattern=r'<ul id="J_AttrUL">([\s\S]*?)</ul>'
     product_attitude_tm_pattern=r'>([\s\S]*?)</li>'
+
+    '''csv文件参数设置'''
+    headers = ['title','url','changeNum','rangeNum','tradeIndex','tradeGrowth','payConverIndex','newp','price','discount_price','commentNum','tradeNum','stockNum','popularity','product_attitudes']
 
     def __fetcg_content(self,file_path):
         with open(file_path, encoding='utf-8') as f:
@@ -47,7 +51,7 @@ class Spider():
                 price="￥"+self.__param_handle(price)
                 #促销价格获取
                 discount_price=re.findall(self.detail_discount_price_tb_pattern, product_detail[0])
-                discount_price="￥"+self.__param_handle(discount_price_detail)
+                discount_price="￥"+self.__param_handle(discount_price)
                 #累计评价数获取
                 commentNum=re.findall(self.detail_commentNum_tb_pattern, product_detail[0])
                 commentNum=self.__param_handle(commentNum)
@@ -66,6 +70,7 @@ class Spider():
                 product_attitudes = re.findall(self.product_attitudes_tb_pattern, htmls)
                 if len(product_attitudes)==1:
                     product_attitudes = re.findall(self.product_attitude_tb_pattern,product_attitudes[0])
+                    product_attitudes=str(product_attitudes).replace(',',';')
                 anchor={'price':price,'discount_price':discount_price,'commentNum':commentNum,'tradeNum':tradeNum,'stockNum':stockNum,'popularity':popularity,'product_attitudes':product_attitudes}
         else:#说明来自于天猫
             #获取newp
@@ -99,17 +104,36 @@ class Spider():
                 if len(popularity)==1:
                     popularity=re.findall("\\d+",popularity[0])
                     popularity=self.__param_handle(popularity)
-                    print(popularity)
                 #获取所有属性列表
                 product_attitudes = re.findall(self.product_attitudes_tm_pattern, htmls)
+                # product_attitudes=str(product_attitudes).replace(',',';')
                 if len(product_attitudes)==1:
-                    product_attitudes = re.findall(self.product_attitude_tm_pattern,product_attitudes[0])     
+                    product_attitudes = re.findall(self.product_attitude_tm_pattern,product_attitudes[0])
+                    product_attitudes=str(product_attitudes).replace(',',';')
                 anchor={'newp':newp,'price':price,'discount_price':discount_price,'commentNum':commentNum,'tradeNum':tradeNum,'stockNum':stockNum,'popularity':popularity,'product_attitudes':product_attitudes}        
         return anchor
-    def __save_to_csv(self,anchors,filename):
+    def __save_to_csv(self,anchor,filename):
         params=filename[0:-4].split('#')
-        with open(os.getcwd()+'/result/'+params[0][0:-4]+'.csv','w',encoding='gbk',newline='') as f:
+        anchors = []
+        with open(os.getcwd()+'/result/'+params[0][0:-4]+'.csv', "r") as csvFile:
+            #将第一行的标题部分删除
+            dataLine = csvFile.readline().strip("\n")
+            dataLine = csvFile.readline().strip("\n")
+            while dataLine != "":
+                tmpList = dataLine.split(',')
+                if len(tmpList)==7:
+                    oldanchor={'title': tmpList[0], 'url': tmpList[1], 'changeNum': tmpList[2], 'rangeNum': tmpList[3],
+                      'tradeIndex': tmpList[4], 'tradeGrowth': tmpList[5], 'payConverIndex': tmpList[6]}
+                elif len(tmpList)==15:
+                     oldanchor={'title': tmpList[0], 'url': tmpList[1], 'changeNum': tmpList[2], 'rangeNum': tmpList[3],
+                      'tradeIndex': tmpList[4], 'tradeGrowth': tmpList[5], 'payConverIndex': tmpList[6],'newp':tmpList[7],
+                      'price':tmpList[8],'discount_price':tmpList[9],'commentNum':tmpList[10],'tradeNum':tmpList[11],'stockNum':tmpList[12],'popularity':tmpList[13],'product_attitudes':tmpList[14]}
+                dataLine = csvFile.readline().strip("\n")
+                anchors.append(oldanchor)
+        csvFile.close()
+        with open(os.getcwd()+'/result/'+params[0][0:-4]+'.csv', "w",encoding='gbk',errors='ignore',newline='') as f:
             f_scv = csv.DictWriter(f,self.headers)
+            anchors[int(params[1])-1]=dict(anchors[int(params[1])],**anchor)
             f_scv.writeheader()
             f_scv.writerows(anchors)
 
@@ -129,7 +153,7 @@ class Spider():
         return param
 
     def go(self):
-        self.__list_files(r'D:\zidonghua\detail')
+        self.__list_files(os.getcwd()+r'\detail')
 
 spider = Spider()
 spider.go()

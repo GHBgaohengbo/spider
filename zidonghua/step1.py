@@ -1,6 +1,8 @@
 import re
 import csv
 import os
+import shutil
+
 from urllib import request
 
 
@@ -18,8 +20,6 @@ class Spider():
     '''生意参谋正则定义'''
     # 获取20条数据的根正则
     root_pattern = r'<tr class="ant-table-row oui-table-row-tree-node-([\s\S]*?)</tr>'
-    # 获取图片链接
-    image_pattern = r'<img class="mediaObject" src="([\s\S]*?)">'
     # 从基础数据中匹配到商品title和链接的正则
     title_url_pattern = r'<p class="singleGoodsName">([\s\S]*?)</p>'
     # 获取到商品的标题正则
@@ -37,6 +37,15 @@ class Spider():
     headers = ['title','url','changeNum','rangeNum','tradeIndex','tradeGrowth','payConverIndex']
     tempFile_headers=['fileName','url','rowNum']
 
+    def __init__(self):
+        #进行一些目录的初始化操作
+        if os.path.exists(os.getcwd()+'/temp'):
+            shutil.rmtree(os.getcwd()+'/temp')
+        if os.path.exists(os.getcwd()+'/result'):
+            shutil.rmtree(os.getcwd()+'/result')
+        os.mkdir(os.getcwd()+'/temp')
+        os.mkdir(os.getcwd()+'/result')
+        
     def __fetcg_content(self,file_path):
         with open(file_path, encoding='utf-8') as f:
             htmls = f.read()
@@ -49,8 +58,6 @@ class Spider():
         # 存放完整的20条数据的信息,包括：商品名称，商品url等信息
         anchors = []
         for data in datas:
-            # #获取商品中的图片信息
-            # image=re.findall(self.image_pattern, data)
             # 获取商品中包含商品title和url的字符串
             title_url = re.findall(self.title_url_pattern, data)
             # title获得
@@ -79,11 +86,13 @@ class Spider():
                 rangeNum = rangeNum_tradeIndex_tradeGrowth_payConverIndex[0]
                 # 交易指数获得
                 tradeIndex = rangeNum_tradeIndex_tradeGrowth_payConverIndex[1]
+                tradeIndex=tradeIndex.replace(',','')
                 # 交易增长幅度获得
                 tradeGrowth = re.findall(self.common1_pattern, rangeNum_tradeIndex_tradeGrowth_payConverIndex[2])
                 tradeGrowth=self.__param_handle(tradeGrowth)                  
                 # 支付转化指数获得
                 payConverIndex = rangeNum_tradeIndex_tradeGrowth_payConverIndex[3]
+                payConverIndex=payConverIndex.replace(',','')
             # 将商品数据封装到字典中
             anchor = {'title': title, 'url': url, 'changeNum': changeNum, 'rangeNum': rangeNum,
                       'tradeIndex': tradeIndex, 'tradeGrowth': tradeGrowth, 'payConverIndex': payConverIndex}
@@ -119,7 +128,7 @@ class Spider():
         #定义一个全局文件,命名方式是存储文件名  商品的url和第几个数据
         urlsFile=open(os.getcwd()+'/temp/'+'fileTemp.csv','w',encoding='gbk',newline='')
         urlsFileCsv= csv.DictWriter(urlsFile,self.tempFile_headers)
-        self.__list_files(r'D:\zidonghua\data',urlsFileCsv)
+        self.__list_files(os.getcwd()+r'\data',urlsFileCsv)
 
 spider = Spider()
 spider.go()
