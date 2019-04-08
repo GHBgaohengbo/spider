@@ -71,6 +71,7 @@ class Spider():
             rangeChange = re.findall(self.rangeChange_pattern, data)
             # 获取行业排名变化值(此处需要作判断，为-和有值时标签不同)
             if len(rangeChange)==1:
+                print(rangeChange[0])
                 changeNum = re.findall(self.changeNum_pattern, rangeChange[0])
                 # 排名变化获得
                 if len(changeNum) == 0:  # 说明排名在页面显示为-

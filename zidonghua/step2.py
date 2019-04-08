@@ -133,7 +133,7 @@ class Spider():
         csvFile.close()
         with open(os.getcwd()+'/result/'+params[0][0:-4]+'.csv', "w",encoding='gbk',errors='ignore',newline='') as f:
             f_scv = csv.DictWriter(f,self.headers)
-            anchors[int(params[1])-1]=dict(anchors[int(params[1])],**anchor)
+            anchors[int(params[1])-1]=dict(anchors[int(params[1])-1],**anchor)
             f_scv.writeheader()
             f_scv.writerows(anchors)
 

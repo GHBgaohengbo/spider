@@ -25,17 +25,25 @@ For $i = 1 To $aRetArray[0] Step +1
 	$rowArray=StringSplit($row,',')
 	_IENavigate($ie,$rowArray[2])
 	$ie = _IEAttach('https:'&$rowArray[2],'url')
-
 	Local $Position = StringInStr($rowArray[2],"item.taobao.com")
-
 	;说明是来自天猫
 	if $Position=0 Then
+		Local $judgeNum=WaitIsObj($ie,'document.querySelector("#J_ItemRates>.tm-indcon>.tm-count")',5)
+		if $judgeNum=0 Then
+			$ie = _IEAttach('淘宝网 - 淘！我喜欢')
+			ContinueLoop
+		EndIf
 		Local $ele1=$ie.document.querySelector("#J_ItemRates>.tm-indcon>.tm-count").innerText
 		While StringLen($ele1)=0 Or  $ele1='-'
 			Sleep(200)
 			$ele1=$ie.document.querySelector("#J_ItemRates>.tm-indcon>.tm-count").innerText
 		WEnd
 	Else
+		Local $judgeNum=WaitIsObj($ie,'document.querySelector("#J_RateCounter")',5)
+		if $judgeNum=0 Then
+			$ie = _IEAttach('淘宝网 - 淘！我喜欢')
+			ContinueLoop
+		EndIf
 		Local $ele2=$ie.document.querySelector("#J_RateCounter").innerText
 		While StringLen($ele2)=0 Or  $ele2='-'
 			Sleep(200)
@@ -56,3 +64,19 @@ For $i = 1 To $aRetArray[0] Step +1
 	;关闭打开的文件
 	FileClose($hFile)
 Next
+
+Func WaitIsObj($IEObj,$Element,$OverTime)
+	Local $Tag = Execute("$IEObj." & $Element)
+	Local $iNum = 1
+	While Not IsObj($Tag)
+		Sleep(1000)
+		$iNum += 1
+		;MsgBox(1,1,"IsObj($Tag):"&IsObj($Tag))
+		$Tag = Execute("$IEObj." & $Element)
+		If $iNum > $OverTime Then
+			Return 0
+			;ExitLoop
+		EndIf
+	WEnd
+	Return 1
+EndFunc
